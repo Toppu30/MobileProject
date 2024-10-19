@@ -73,23 +73,42 @@ class PocketBaseService {
     }
   }
 
+  // ฟังก์ชันดึงงานบ้านทั้งหมด (สำหรับ Admin)
   Future<List<Map<String, dynamic>>> getChores() async {
     try {
-      if (await isAdmin()) {
-        // ถ้าเป็น admin ให้ดึงงานบ้านทั้งหมด
-        final result = await pb.collection('chores').getList();
-        return result.items.map((item) => item.toJson()).toList();
-      } else {
-        // ถ้าเป็นผู้ใช้ทั่วไป ดึงงานบ้านเฉพาะของตัวเอง
-        final userId = pb.authStore.model?.id;
-        final result = await pb.collection('chores').getList(
-              filter: 'assigned_to = "$userId"',
-            );
-        return result.items.map((item) => item.toJson()).toList();
-      }
+      final result = await pb.collection('chores').getList();
+      return result.items.map((item) {
+        
+        return {
+          'id': item.id,
+          'title': item.getStringValue('title'),
+          'description': item.getStringValue('description'),
+          'assigned_to': item.getStringValue('assigned_to'),
+        };
+      }).toList();
     } catch (e) {
       print('Failed to fetch chores: $e');
-      throw e;
+      return [];
+    }
+  }
+
+  // ฟังก์ชันดึงงานบ้านเฉพาะที่ assigned ให้ผู้ใช้ที่ล็อกอินอยู่ (สำหรับ Member)
+  Future<List<Map<String, dynamic>>> getUserChores(String userId) async {
+    try {
+      final result = await pb.collection('chores').getList(
+        filter: 'assigned_to.id = "$userId"',
+      );
+      return result.items.map((item) {
+        return {
+          'id': item.id,
+          'title': item.getStringValue('title'),
+          'description': item.getStringValue('description'),
+          'assigned_to': item.getStringValue('assigned_to'),
+        };
+      }).toList();
+    } catch (e) {
+      print('Failed to fetch user chores: $e');
+      return [];
     }
   }
 
